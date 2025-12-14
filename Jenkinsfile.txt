@@ -1,0 +1,44 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Get Code') {
+            steps {
+                echo 'Traemos el code'
+                git 'https://github.com/xbarneso/helloworld.git'
+                bat 'dir'
+                echo WORKSPACE
+            }
+        }
+         stage('Build') {
+            steps {
+                echo 'Pues nada a build'
+            }
+         }
+         stage('Unit') {
+            steps {
+                bat '''
+               set PYTHONPATH=%WORKSPACE%
+                "C:\\Users\\xbarn\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\pytest.exe" --junitxml=result-unit.xml test\\unit
+                '''
+            }
+         }
+         stage('Flask') {
+            steps {
+                bat '''
+        set FLASK_APP=app\\api.py
+        set FLASK_ENV=development
+        set PYTHONPATH=%WORKSPACE%
+
+        start "Flask" "C:\\Users\\xbarn\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m flask run --port=5000 > flask.log 2>&1
+        
+        start java -jar C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\P25\\unir1\\test\\wiremock\\wiremock-standalone-4.0.0-beta.2.jar --port 9090 --root-dir > wiremock.log 2>&1
+
+        "C:\\Users\\xbarn\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\pytest.exe" --junitxml=result-unit.xml test\\unit
+        '''
+    }
+         }
+         
+         
+    }
+}
