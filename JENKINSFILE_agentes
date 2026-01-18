@@ -1,51 +1,66 @@
 pipeline {
-    agent any
+    agent none
+
+    options {
+        skipDefaultCheckout true
+    }
 
     stages {
         stage('Get Code') {
+            agent any
             steps {
                 // Obtener código del repo
                 git 'https://github.com/gCuadros/helloworld-devops.git'
                 sh 'ls -la'
                 echo WORKSPACE
+                stash includes: '**', name: 'code'
             }
         }
 
         stage('Build') {
+            agent any
             steps {
                 echo 'Eyyy, esto es Python. No hay que compilar nada!!!'
-                echo 'Installing dependencies...'
-                sh 'python3 -m venv venv'
-                sh '. venv/bin/activate && pip install --upgrade pip'
-                sh '. venv/bin/activate && pip install -r requirements.txt'
-                sh '. venv/bin/activate && pip install -e .'
             }
         }
 
         stage('Tests') {
             parallel {
                 stage('Unit') {
+                    agent { label 'agent1' }
                     steps {
+                        unstash 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
-                                export PYTHONPATH=.
+                                export PYTHONPATH=$WORKSPACE
+                                python3 -m venv venv
                                 . venv/bin/activate
+                                pip install -r requirements.txt
+                                pip install -e .
                                 pytest --junitxml=result-unit.xml test/unit
                             '''
                         }
+                        stash includes: 'result-unit.xml', name: 'unit-results'
                     }
                 }
 
                 stage('Rest') {
+                    agent { label 'agent2' }
                     steps {
+                        unstash 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
+                                python3 -m venv venv
                                 . venv/bin/activate
+                                pip install -r requirements.txt
+                                pip install -e .
+
                                 export FLASK_APP=app/api.py
 
                                 # Iniciar Flask en background
                                 nohup flask run --port 5001 > flask.log 2>&1 &
                                 echo $! > flask.pid
+                                sleep 4
 
                                 # Iniciar Wiremock
                                 if ! command -v wiremock &> /dev/null; then
@@ -54,44 +69,37 @@ pipeline {
                                 fi
                                 nohup wiremock --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
                                 echo $! > wiremock.pid
-
-                                # Esperar a que los servicios arranquen
-                                sleep 10
+                                sleep 15
 
                                 # Ejecutar tests REST
                                 pytest --junitxml=result-rest.xml test/rest
+
+                                # Limpiar servicios
+                                kill $(cat flask.pid) 2>/dev/null || true
+                                kill $(cat wiremock.pid) 2>/dev/null || true
                             '''
                         }
+                        stash includes: 'result-rest.xml', name: 'rest-results'
                     }
                 }
             }
         }
 
         stage('Results') {
+            agent any
             steps {
+                unstash 'unit-results'
+                unstash 'rest-results'
                 junit 'result*.xml'
             }
         }
     }
 
     post {
-        always {
-            echo 'Cleaning up services...'
-            sh '''
-                if [ -f flask.pid ]; then
-                    kill $(cat flask.pid) 2>/dev/null || true
-                    rm flask.pid
-                fi
-                if [ -f wiremock.pid ]; then
-                    kill $(cat wiremock.pid) 2>/dev/null || true
-                    rm wiremock.pid
-                fi
-            '''
-        }
         success {
             echo '========================================='
             echo 'Pipeline executed successfully!'
-            echo 'All tests passed!'
+            echo 'All tests passed on distributed agents!'
             echo '========================================='
         }
         failure {
