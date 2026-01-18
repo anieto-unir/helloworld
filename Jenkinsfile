@@ -5,7 +5,7 @@ pipeline {
         stage('Get Code') {
             steps {
                 // Obtener código del repo
-                git branch: 'feature/nueva-funcionalidad', url:'https://github.com/gCuadros/helloworld-devops.git'
+                git branch: 'feature/practice-1.1', url:'https://github.com/gCuadros/helloworld-devops.git'
                 sh 'ls -la'
                 echo WORKSPACE
             }
@@ -48,16 +48,19 @@ pipeline {
                                 nohup flask run --port 5001 > flask.log 2>&1 &
                                 echo $! > flask.pid
 
-                                # Iniciar Wiremock
-                                if ! command -v wiremock &> /dev/null; then
-                                    echo "Installing Wiremock..."
-                                    brew install wiremock-standalone
+                                # Descargar Wiremock si no existe
+                                if [ ! -f "wiremock-standalone.jar" ]; then
+                                    echo "Downloading Wiremock..."
+                                    curl -o wiremock-standalone.jar https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar
                                 fi
-                                nohup wiremock --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
+                                nohup java -jar wiremock-standalone.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
                                 echo $! > wiremock.pid
 
                                 # Esperar a que los servicios arranquen
-                                sleep 10
+                                echo "Waiting for Flask to start..."
+                                sleep 8
+                                echo "Waiting for Wiremock to start..."
+                                sleep 5
 
                                 # Ejecutar tests REST
                                 pytest --junitxml=result-rest.xml test/rest

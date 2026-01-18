@@ -62,14 +62,16 @@ pipeline {
                                 echo $! > flask.pid
                                 sleep 4
 
-                                # Iniciar Wiremock
-                                if ! command -v wiremock &> /dev/null; then
-                                    echo "Installing Wiremock..."
-                                    brew install wiremock-standalone
+                                # Descargar Wiremock si no existe
+                                if [ ! -f "wiremock-standalone.jar" ]; then
+                                    echo "Downloading Wiremock..."
+                                    curl -o wiremock-standalone.jar https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar
                                 fi
-                                nohup wiremock --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
+                                nohup java -jar wiremock-standalone.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
                                 echo $! > wiremock.pid
-                                sleep 15
+
+                                echo "Waiting for services to start..."
+                                sleep 10
 
                                 # Ejecutar tests REST
                                 pytest --junitxml=result-rest.xml test/rest
