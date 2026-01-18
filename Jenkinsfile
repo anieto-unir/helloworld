@@ -5,7 +5,7 @@ pipeline {
         stage('Get Code') {
             steps {
                 // Obtener código del repo
-                git 'https://github.com/gCuadros/helloworld-devops.git'
+                git 'https://github.com/gCuadros/helloworld-devops/tree/feature/practice-1.1'
                 sh 'ls -la'
                 echo WORKSPACE
             }
