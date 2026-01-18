@@ -32,9 +32,14 @@ pipeline {
                     agent { label 'agent1' }
                     steps {
                         unstash 'code'
-                        sh 'ls -la'
+                        sh 'echo "=== DEBUG: After unstash ==="'
                         sh 'pwd'
-                        sh 'cat requirements.txt || echo "requirements.txt not found!"'
+                        sh 'ls -la'
+                        sh 'echo "=== Checking requirements.txt ==="'
+                        sh 'test -f requirements.txt && echo "requirements.txt EXISTS" || echo "requirements.txt NOT FOUND"'
+                        sh 'test -f requirements.txt && cat requirements.txt || true'
+                        sh 'echo "=== Files in current directory ==="'
+                        sh 'find . -maxdepth 2 -type f | sort'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
                                 export PYTHONPATH=$PWD
@@ -54,9 +59,14 @@ pipeline {
                     agent { label 'agent2' }
                     steps {
                         unstash 'code'
-                        sh 'ls -la'
+                        sh 'echo "=== DEBUG: After unstash ==="'
                         sh 'pwd'
-                        sh 'cat requirements.txt || echo "requirements.txt not found!"'
+                        sh 'ls -la'
+                        sh 'echo "=== Checking requirements.txt ==="'
+                        sh 'test -f requirements.txt && echo "requirements.txt EXISTS" || echo "requirements.txt NOT FOUND"'
+                        sh 'test -f requirements.txt && cat requirements.txt || true'
+                        sh 'echo "=== Files in current directory ==="'
+                        sh 'find . -maxdepth 2 -type f | sort'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
                                 export PYTHONPATH=$PWD
