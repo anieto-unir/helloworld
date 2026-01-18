@@ -1,3 +1,27 @@
 result.xml
 __pycache__
 .pytest_cache
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Testing
+.coverage
+htmlcov/
+reports/
+*.log
+*.pid
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
