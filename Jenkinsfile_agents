@@ -10,7 +10,7 @@ pipeline {
             agent any
             steps {
                 // Obtener código del repo
-                git 'https://github.com/gCuadros/helloworld-devops.git'
+                git branch: 'feature/practice-1.1', url: 'https://github.com/gCuadros/helloworld-devops.git'
                 sh 'ls -la'
                 sh 'pwd'
                 sh 'echo "Files to stash:"'
