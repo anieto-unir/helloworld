@@ -12,8 +12,10 @@ pipeline {
                 // Obtener código del repo
                 git 'https://github.com/gCuadros/helloworld-devops.git'
                 sh 'ls -la'
-                echo WORKSPACE
-                stash includes: '**', name: 'code'
+                sh 'pwd'
+                sh 'echo "Files to stash:"'
+                sh 'find . -type f | head -20'
+                stash includes: '**', name: 'code', allowEmpty: false
             }
         }
 
@@ -32,17 +34,19 @@ pipeline {
                         unstash 'code'
                         sh 'ls -la'
                         sh 'pwd'
+                        sh 'cat requirements.txt || echo "requirements.txt not found!"'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
-                                export PYTHONPATH=$WORKSPACE
+                                export PYTHONPATH=$PWD
                                 python3 -m venv venv
                                 . venv/bin/activate
+                                pip install --upgrade pip
                                 pip install -r requirements.txt
                                 pip install -e .
                                 pytest --junitxml=result-unit.xml test/unit
                             '''
                         }
-                        stash includes: 'result-unit.xml', name: 'unit-results'
+                        stash includes: 'result-unit.xml', name: 'unit-results', allowEmpty: false
                     }
                 }
 
@@ -52,10 +56,13 @@ pipeline {
                         unstash 'code'
                         sh 'ls -la'
                         sh 'pwd'
+                        sh 'cat requirements.txt || echo "requirements.txt not found!"'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
+                                export PYTHONPATH=$PWD
                                 python3 -m venv venv
                                 . venv/bin/activate
+                                pip install --upgrade pip
                                 pip install -r requirements.txt
                                 pip install -e .
 
@@ -85,7 +92,7 @@ pipeline {
                                 kill $(cat wiremock.pid) 2>/dev/null || true
                             '''
                         }
-                        stash includes: 'result-rest.xml', name: 'rest-results'
+                        stash includes: 'result-rest.xml', name: 'rest-results', allowEmpty: false
                     }
                 }
             }
