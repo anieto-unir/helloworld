@@ -40,7 +40,7 @@ pipeline {
                 echo 'Starting Flask application...'
                 sh '''
                     . venv/bin/activate
-                    nohup python3 -m flask --app app.api run --port 5000 > flask.log 2>&1 &
+                    nohup python3 -m flask --app app.api:api_application run --port 5000 > flask.log 2>&1 &
                     echo $! > flask.pid
                     sleep 5
                     echo "Flask started with PID: $(cat flask.pid)"
