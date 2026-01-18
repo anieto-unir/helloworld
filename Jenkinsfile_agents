@@ -30,6 +30,8 @@ pipeline {
                     agent { label 'agent1' }
                     steps {
                         unstash 'code'
+                        sh 'ls -la'
+                        sh 'pwd'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
                                 export PYTHONPATH=$WORKSPACE
@@ -48,6 +50,8 @@ pipeline {
                     agent { label 'agent2' }
                     steps {
                         unstash 'code'
+                        sh 'ls -la'
+                        sh 'pwd'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
                                 python3 -m venv venv
