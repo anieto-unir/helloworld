@@ -10,10 +10,12 @@ pipeline {
             agent any
             steps {
                 // Obtener código del repo
-                git 'https://github.com/gCuadros/helloworld-devops.git'
+                git branch: 'feature/practice-1.1', url: 'https://github.com/gCuadros/helloworld-devops.git'
                 sh 'ls -la'
-                echo WORKSPACE
-                stash includes: '**', name: 'code'
+                sh 'pwd'
+                sh 'echo "Files to stash:"'
+                sh 'find . -type f | head -20'
+                stash includes: '**', name: 'code', allowEmpty: false
             }
         }
 
@@ -30,19 +32,26 @@ pipeline {
                     agent { label 'agent1' }
                     steps {
                         unstash 'code'
-                        sh 'ls -la'
+                        sh 'echo "=== DEBUG: After unstash ==="'
                         sh 'pwd'
+                        sh 'ls -la'
+                        sh 'echo "=== Checking requirements.txt ==="'
+                        sh 'test -f requirements.txt && echo "requirements.txt EXISTS" || echo "requirements.txt NOT FOUND"'
+                        sh 'test -f requirements.txt && cat requirements.txt || true'
+                        sh 'echo "=== Files in current directory ==="'
+                        sh 'find . -maxdepth 2 -type f | sort'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
-                                export PYTHONPATH=$WORKSPACE
+                                export PYTHONPATH=$PWD
                                 python3 -m venv venv
                                 . venv/bin/activate
+                                pip install --upgrade pip
                                 pip install -r requirements.txt
                                 pip install -e .
                                 pytest --junitxml=result-unit.xml test/unit
                             '''
                         }
-                        stash includes: 'result-unit.xml', name: 'unit-results'
+                        stash includes: 'result-unit.xml', name: 'unit-results', allowEmpty: false
                     }
                 }
 
@@ -50,12 +59,20 @@ pipeline {
                     agent { label 'agent2' }
                     steps {
                         unstash 'code'
-                        sh 'ls -la'
+                        sh 'echo "=== DEBUG: After unstash ==="'
                         sh 'pwd'
+                        sh 'ls -la'
+                        sh 'echo "=== Checking requirements.txt ==="'
+                        sh 'test -f requirements.txt && echo "requirements.txt EXISTS" || echo "requirements.txt NOT FOUND"'
+                        sh 'test -f requirements.txt && cat requirements.txt || true'
+                        sh 'echo "=== Files in current directory ==="'
+                        sh 'find . -maxdepth 2 -type f | sort'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
+                                export PYTHONPATH=$PWD
                                 python3 -m venv venv
                                 . venv/bin/activate
+                                pip install --upgrade pip
                                 pip install -r requirements.txt
                                 pip install -e .
 
@@ -85,7 +102,7 @@ pipeline {
                                 kill $(cat wiremock.pid) 2>/dev/null || true
                             '''
                         }
-                        stash includes: 'result-rest.xml', name: 'rest-results'
+                        stash includes: 'result-rest.xml', name: 'rest-results', allowEmpty: false
                     }
                 }
             }
