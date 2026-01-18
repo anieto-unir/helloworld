@@ -40,7 +40,7 @@ pipeline {
                 echo 'Starting Flask application...'
                 sh '''
                     . venv/bin/activate
-                    nohup python3 -m flask --app app.api:api_application run --port 5000 > flask.log 2>&1 &
+                    nohup python3 -m flask --app app.api:api_application run --port 5001 > flask.log 2>&1 &
                     echo $! > flask.pid
                     sleep 5
                     echo "Flask started with PID: $(cat flask.pid)"
@@ -60,7 +60,7 @@ pipeline {
 
                 echo 'Verifying services are running...'
                 sh '''
-                    curl -f http://localhost:5000/ || (echo "Flask failed to start" && exit 1)
+                    curl -f http://localhost:5001/ || (echo "Flask failed to start" && exit 1)
                     curl -f http://localhost:9090/__admin || (echo "Wiremock failed to start" && exit 1)
                     echo "All services are running successfully"
                 '''
