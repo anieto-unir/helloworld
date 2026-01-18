@@ -5,11 +5,12 @@ pipeline {
         stage('Get Code') {
             steps {
                 // Obtener código del repo
-                git 'https://github.com/gCuadros/helloworld-devops/tree/feature/practice-1.1'
+                git branch: 'feature/nueva-funcionalidad', url:'https://github.com/gCuadros/helloworld-devops.git'
                 sh 'ls -la'
                 echo WORKSPACE
             }
         }
+
 
         stage('Build') {
             steps {
