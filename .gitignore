@@ -12,6 +12,9 @@ ENV/
 *$py.class
 *.so
 .Python
+*.egg-info/
+dist/
+build/
 
 # Testing
 .coverage
