@@ -89,9 +89,8 @@ pipeline {
                                 kill $(cat wiremock.pid) 2>/dev/null || true
                             '''
                         }
-                        junit 'result-rest.xml'                        
-                        // Guardar archivos de cobertura
-                        stash includes: 'coverage.xml,htmlcov/**,.coverage', name: 'coverage-data'                    }
+                        junit 'result-rest.xml'
+                    }
                 }
 
                 stage('Static') {
