@@ -106,6 +106,7 @@ pipeline {
                                 fi
                             '''
                         }
+                        recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.log')]
                         archiveArtifacts artifacts: 'flake8.log', allowEmptyArchive: true
                     }
                 }
