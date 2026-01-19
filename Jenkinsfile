@@ -173,7 +173,15 @@ pipeline {
                     # Limpiar
                     kill $(cat flask.pid) 2>/dev/null || true
                 '''
-                perfReport sourceDataFiles: 'jmeter-results.jtl', errorUnstableThreshold: 0, errorFailedThreshold: 5
+                archiveArtifacts artifacts: 'jmeter-results.jtl,jmeter-report/**/*', allowEmptyArchive: true
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'jmeter-report',
+                    reportFiles: 'index.html',
+                    reportName: 'JMeter Performance Report'
+                ])
             }
         }
 
