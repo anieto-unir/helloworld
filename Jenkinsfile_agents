@@ -14,8 +14,8 @@ pipeline {
                 sh 'hostname'
                 sh 'echo "Workspace: $WORKSPACE"'
 
-                // Obtener código
-                git branch: 'feature/practice-1.2', url: 'https://github.com/gCuadros/helloworld-devops.git'
+                // Obtener código - Reto 3: rama con 100% coverage
+                git branch: 'feature_fix_coverage', url: 'https://github.com/gCuadros/helloworld-devops.git'
 
                 // Stash para compartir
                 stash includes: '**', name: 'code', allowEmpty: false
