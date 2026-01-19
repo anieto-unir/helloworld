@@ -204,6 +204,9 @@ pipeline {
                     '''
                 }
                 publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
                     reportDir: 'htmlcov',
                     reportFiles: 'index.html',
                     reportName: 'Coverage Report'
