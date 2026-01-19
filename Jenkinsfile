@@ -176,6 +176,7 @@ pipeline {
                     kill $(cat flask.pid) 2>/dev/null || true
                 '''
                 archiveArtifacts artifacts: 'jmeter-results.jtl,jmeter-report/**/*', allowEmptyArchive: true
+                perfReport sourceDataFiles: 'jmeter-results.jtl'
                 publishHTML([
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
