@@ -141,7 +141,7 @@ pipeline {
                                 fi
                             '''
                         }
-                        recordIssues tools: [bandit(name: 'Bandit', pattern: 'bandit-report.json')]
+                        recordIssues tools: [pmdParser(name: 'Bandit', pattern: 'bandit-report.json')]
                         archiveArtifacts artifacts: 'bandit-report.*', allowEmptyArchive: true
                     }
                 }
