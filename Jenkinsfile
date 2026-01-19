@@ -198,7 +198,7 @@ pipeline {
                         pip install -e .
 
                         # Ejecutar tests con cobertura
-                        pytest --cov=app --cov-report=xml --cov-report=html --cov-report=term test/unit
+                        pytest --cov=app --cov-branch --cov-report=xml --cov-report=html --cov-report=term test/unit
 
                         # Extraer cobertura
                         COVERAGE_LINE=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(float(root.attrib['line-rate']) * 100)")
