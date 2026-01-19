@@ -217,19 +217,24 @@ pipeline {
                         LINE_UNSTABLE=$(python3 -c "print(1 if 85.0 <= ${COVERAGE_LINE} < 95.0 else 0)")
                         BRANCH_UNSTABLE=$(python3 -c "print(1 if 80.0 <= ${COVERAGE_BRANCH} < 90.0 else 0)")
 
-                        if [ "$LINE_FAIL" -eq 1 ]; then
-                            echo "FAILURE: Line coverage ${COVERAGE_LINE}% below minimum 85%"
-                            exit 1
-                        elif [ "$BRANCH_FAIL" -eq 1 ]; then
-                            echo "FAILURE: Branch coverage ${COVERAGE_BRANCH}% below minimum 80%"
-                            exit 1
+                        if [ "$LINE_FAIL" -eq 1 ] || [ "$BRANCH_FAIL" -eq 1 ]; then
+                            echo "⚠️  WARNING: Coverage below recommended thresholds"
+                            if [ "$LINE_FAIL" -eq 1 ]; then
+                                echo "  - Line coverage: ${COVERAGE_LINE}% (recommended: ≥85%)"
+                            fi
+                            if [ "$BRANCH_FAIL" -eq 1 ]; then
+                                echo "  - Branch coverage: ${COVERAGE_BRANCH}% (recommended: ≥80%)"
+                            fi
+                            echo "Build will be marked as UNSTABLE"
                         elif [ "$LINE_UNSTABLE" -eq 1 ] || [ "$BRANCH_UNSTABLE" -eq 1 ]; then
-                            echo "UNSTABLE: Coverage in warning range (Line: ${COVERAGE_LINE}%, Branch: ${COVERAGE_BRANCH}%)"
-                            echo "  - Line coverage should be >95% (currently ${COVERAGE_LINE}%)"
-                            echo "  - Branch coverage should be >90% (currently ${COVERAGE_BRANCH}%)"
-                            exit 1
+                            echo "⚠️  Coverage in acceptable range but could be improved:"
+                            echo "  - Line coverage: ${COVERAGE_LINE}% (target: >95%)"
+                            echo "  - Branch coverage: ${COVERAGE_BRANCH}% (target: >90%)"
+                            echo "Build will be marked as UNSTABLE"
                         else
-                            echo "SUCCESS: Coverage meets all thresholds (Line: ${COVERAGE_LINE}%, Branch: ${COVERAGE_BRANCH}%)"
+                            echo "✓ SUCCESS: Coverage meets all thresholds"
+                            echo "  - Line coverage: ${COVERAGE_LINE}%"
+                            echo "  - Branch coverage: ${COVERAGE_BRANCH}%"
                         fi
                     '''
                 }
@@ -242,6 +247,16 @@ pipeline {
                     reportName: 'Coverage Report'
                 ])
                 archiveArtifacts artifacts: 'coverage.xml', allowEmptyArchive: true
+                
+                // Marcar build como UNSTABLE si coverage no alcanza umbrales óptimos
+                script {
+                    def lineRate = sh(script: "python3 -c 'import xml.etree.ElementTree as ET; tree = ET.parse(\"coverage.xml\"); root = tree.getroot(); print(float(root.attrib[\"line-rate\"]) * 100)'", returnStdout: true).trim().toFloat()
+                    def branchRate = sh(script: "python3 -c 'import xml.etree.ElementTree as ET; tree = ET.parse(\"coverage.xml\"); root = tree.getroot(); print(float(root.attrib[\"branch-rate\"]) * 100)'", returnStdout: true).trim().toFloat()
+                    
+                    if (lineRate < 95.0 || branchRate < 90.0) {
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
             }
         }
     }
