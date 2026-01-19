@@ -28,10 +28,16 @@ pipeline {
                                 pip install --upgrade pip
                                 pip install -r requirements.txt
                                 pip install -e .
-                                pytest --junitxml=result-unit.xml test/unit
+                                
+                                # Ejecutar tests CON cobertura (una sola vez)
+                                pytest --cov=app --cov-branch --cov-report=xml --cov-report=html \
+                                       --junitxml=result-unit.xml test/unit
                             '''
                         }
                         junit 'result-unit.xml'
+                        
+                        // Guardar archivos de cobertura para el stage Coverage
+                        stash includes: 'coverage.xml,htmlcov/**,.coverage', name: 'coverage-data'
                     }
                 }
 
@@ -190,33 +196,40 @@ pipeline {
 
         stage('Coverage') {
             steps {
+                // Recuperar archivos de cobertura generados en stage Unit
+                unstash 'coverage-data'
+                
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     sh '''
-                        export PYTHONPATH=$PWD
-                        rm -rf venv-cov
-                        python3 -m venv venv-cov
-                        . venv-cov/bin/activate
-                        pip install --upgrade pip
-                        pip install -r requirements.txt
-                        pip install -e .
-
-                        # Ejecutar tests con cobertura
-                        pytest --cov=app --cov-branch --cov-report=xml --cov-report=html --cov-report=term test/unit
-
-                        # Extraer cobertura
+                        # Extraer cobertura del archivo ya generado
                         COVERAGE_LINE=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(float(root.attrib['line-rate']) * 100)")
                         COVERAGE_BRANCH=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(float(root.attrib['branch-rate']) * 100)")
 
                         echo "Line coverage: ${COVERAGE_LINE}%"
                         echo "Branch coverage: ${COVERAGE_BRANCH}%"
 
-                        # Aplicar baremo
-                        LINE_OK=$(python3 -c "print(1 if ${COVERAGE_LINE} >= 85.0 else 0)")
-                        BRANCH_OK=$(python3 -c "print(1 if ${COVERAGE_BRANCH} >= 80.0 else 0)")
+                        # Aplicar baremo según enunciado
+                        # Líneas: <85% rojo, 85-95% unstable, >95% verde
+                        # Ramas: <80% rojo, 80-90% unstable, >90% verde
+                        
+                        LINE_FAIL=$(python3 -c "print(1 if ${COVERAGE_LINE} < 85.0 else 0)")
+                        BRANCH_FAIL=$(python3 -c "print(1 if ${COVERAGE_BRANCH} < 80.0 else 0)")
+                        LINE_UNSTABLE=$(python3 -c "print(1 if 85.0 <= ${COVERAGE_LINE} < 95.0 else 0)")
+                        BRANCH_UNSTABLE=$(python3 -c "print(1 if 80.0 <= ${COVERAGE_BRANCH} < 90.0 else 0)")
 
-                        if [ "$LINE_OK" -eq 0 ] || [ "$BRANCH_OK" -eq 0 ]; then
-                            echo "UNSTABLE: Coverage below minimum (Line: 85%, Branch: 80%)"
-            exit 1
+                        if [ "$LINE_FAIL" -eq 1 ]; then
+                            echo "FAILURE: Line coverage ${COVERAGE_LINE}% below minimum 85%"
+                            exit 1
+                        elif [ "$BRANCH_FAIL" -eq 1 ]; then
+                            echo "FAILURE: Branch coverage ${COVERAGE_BRANCH}% below minimum 80%"
+                            exit 1
+                        elif [ "$LINE_UNSTABLE" -eq 1 ] || [ "$BRANCH_UNSTABLE" -eq 1 ]; then
+                            echo "UNSTABLE: Coverage in warning range (Line: ${COVERAGE_LINE}%, Branch: ${COVERAGE_BRANCH}%)"
+                            echo "  - Line coverage should be >95% (currently ${COVERAGE_LINE}%)"
+                            echo "  - Branch coverage should be >90% (currently ${COVERAGE_BRANCH}%)"
+                            exit 1
+                        else
+                            echo "SUCCESS: Coverage meets all thresholds (Line: ${COVERAGE_LINE}%, Branch: ${COVERAGE_BRANCH}%)"
                         fi
                     '''
                 }
