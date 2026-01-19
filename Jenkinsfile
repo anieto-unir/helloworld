@@ -22,8 +22,9 @@ pipeline {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
                                 export PYTHONPATH=$PWD
-                                python3 -m venv venv
-                                . venv/bin/activate
+                                rm -rf venv-unit
+                                python3 -m venv venv-unit
+                                . venv-unit/bin/activate
                                 pip install --upgrade pip
                                 pip install -r requirements.txt
                                 pip install -e .
@@ -39,8 +40,9 @@ pipeline {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
                                 export PYTHONPATH=$PWD
-                                python3 -m venv venv
-                                . venv/bin/activate
+                                rm -rf venv-rest
+                                python3 -m venv venv-rest
+                                . venv-rest/bin/activate
                                 pip install --upgrade pip
                                 pip install -r requirements.txt
                                 pip install -e .
@@ -79,8 +81,9 @@ pipeline {
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
-                                python3 -m venv venv
-                                . venv/bin/activate
+                                rm -rf venv-static
+                                python3 -m venv venv-static
+                                . venv-static/bin/activate
                                 pip install --upgrade pip
                                 pip install flake8 flake8-html
 
@@ -103,7 +106,7 @@ pipeline {
                                 fi
                             '''
                         }
-                        recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.log')]
+                        archiveArtifacts artifacts: 'flake8.log', allowEmptyArchive: true
                     }
                 }
 
@@ -111,8 +114,9 @@ pipeline {
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
-                                python3 -m venv venv
-                                . venv/bin/activate
+                                rm -rf venv-security
+                                python3 -m venv venv-security
+                                . venv-security/bin/activate
                                 pip install --upgrade pip
                                 pip install bandit
 
@@ -146,8 +150,9 @@ pipeline {
             steps {
                 sh '''
                     export PYTHONPATH=$PWD
-                    python3 -m venv venv
-                    . venv/bin/activate
+                    rm -rf venv-perf
+                    python3 -m venv venv-perf
+                    . venv-perf/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
                     pip install -e .
@@ -177,8 +182,9 @@ pipeline {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     sh '''
                         export PYTHONPATH=$PWD
-                        python3 -m venv venv
-                        . venv/bin/activate
+                        rm -rf venv-cov
+                        python3 -m venv venv-cov
+                        . venv-cov/bin/activate
                         pip install --upgrade pip
                         pip install -r requirements.txt
                         pip install -e .
@@ -199,7 +205,7 @@ pipeline {
 
                         if [ "$LINE_OK" -eq 0 ] || [ "$BRANCH_OK" -eq 0 ]; then
                             echo "UNSTABLE: Coverage below minimum (Line: 85%, Branch: 80%)"
-                            exit 1
+            exit 1
                         fi
                     '''
                 }
