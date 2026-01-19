@@ -234,7 +234,7 @@ pipeline {
                     reportFiles: 'index.html',
                     reportName: 'Coverage Report'
                 ])
-                cobertura coberturaReportFile: 'coverage.xml'
+                archiveArtifacts artifacts: 'coverage.xml', allowEmptyArchive: true
             }
         }
     }
