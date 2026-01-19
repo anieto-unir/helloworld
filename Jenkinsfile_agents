@@ -1,5 +1,5 @@
 pipeline {
-    agent none
+    agent none  // <-- CAMBIO: agent none
 
     options {
         skipDefaultCheckout true
@@ -7,39 +7,31 @@ pipeline {
 
     stages {
         stage('Get Code') {
-            agent any
+            agent { label 'agent-local' }  // <-- CAMBIO
             steps {
-                // Obtener código del repo
-                git branch: 'feature/practice-1.1', url: 'https://github.com/gCuadros/helloworld-devops.git'
-                sh 'ls -la'
-                sh 'pwd'
-                sh 'echo "Files to stash:"'
-                sh 'find . -type f | head -20'
-                stash includes: '**', name: 'code', allowEmpty: false
-            }
-        }
+                // Identificación del agente
+                sh 'whoami'
+                sh 'hostname'
+                sh 'echo "Workspace: $WORKSPACE"'
 
-        stage('Build') {
-            agent any
-            steps {
-                echo 'Eyyy, esto es Python. No hay que compilar nada!!!'
+                // Obtener código
+                git branch: 'feature/practice-1.2', url: 'https://github.com/gCuadros/helloworld-devops.git'
+
+                // Stash para compartir
+                stash includes: '**', name: 'code', allowEmpty: false
             }
         }
 
         stage('Tests') {
             parallel {
                 stage('Unit') {
-                    agent { label 'agent1' }
+                    agent { label 'agent1' }  // <-- CAMBIO
                     steps {
-                        unstash 'code'
-                        sh 'echo "=== DEBUG: After unstash ==="'
-                        sh 'pwd'
-                        sh 'ls -la'
-                        sh 'echo "=== Checking requirements.txt ==="'
-                        sh 'test -f requirements.txt && echo "requirements.txt EXISTS" || echo "requirements.txt NOT FOUND"'
-                        sh 'test -f requirements.txt && cat requirements.txt || true'
-                        sh 'echo "=== Files in current directory ==="'
-                        sh 'find . -maxdepth 2 -type f | sort'
+                        sh 'whoami'
+                        sh 'hostname'
+                        sh 'echo "Workspace: $WORKSPACE"'
+
+                        unstash 'code'  // <-- CAMBIO: recuperar código
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
                                 export PYTHONPATH=$PWD
@@ -51,22 +43,18 @@ pipeline {
                                 pytest --junitxml=result-unit.xml test/unit
                             '''
                         }
-                        stash includes: 'result-unit.xml', name: 'unit-results', allowEmpty: false
+                        junit 'result-unit.xml'
                     }
                 }
 
                 stage('Rest') {
-                    agent { label 'agent2' }
+                    agent { label 'agent2' }  // <-- CAMBIO
                     steps {
+                        sh 'whoami'
+                        sh 'hostname'
+                        sh 'echo "Workspace: $WORKSPACE"'
+
                         unstash 'code'
-                        sh 'echo "=== DEBUG: After unstash ==="'
-                        sh 'pwd'
-                        sh 'ls -la'
-                        sh 'echo "=== Checking requirements.txt ==="'
-                        sh 'test -f requirements.txt && echo "requirements.txt EXISTS" || echo "requirements.txt NOT FOUND"'
-                        sh 'test -f requirements.txt && cat requirements.txt || true'
-                        sh 'echo "=== Files in current directory ==="'
-                        sh 'find . -maxdepth 2 -type f | sort'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh '''
                                 export PYTHONPATH=$PWD
@@ -78,42 +66,172 @@ pipeline {
 
                                 export FLASK_APP=app/api.py
 
-                                # Iniciar Flask en background
                                 nohup flask run --port 5001 > flask.log 2>&1 &
                                 echo $! > flask.pid
                                 sleep 4
 
-                                # Descargar Wiremock si no existe
                                 if [ ! -f "wiremock-standalone.jar" ]; then
-                                    echo "Downloading Wiremock..."
                                     curl -o wiremock-standalone.jar https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar
                                 fi
                                 nohup java -jar wiremock-standalone.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
                                 echo $! > wiremock.pid
-
-                                echo "Waiting for services to start..."
                                 sleep 10
 
-                                # Ejecutar tests REST
                                 pytest --junitxml=result-rest.xml test/rest
 
-                                # Limpiar servicios
                                 kill $(cat flask.pid) 2>/dev/null || true
                                 kill $(cat wiremock.pid) 2>/dev/null || true
                             '''
                         }
-                        stash includes: 'result-rest.xml', name: 'rest-results', allowEmpty: false
+                        junit 'result-rest.xml'
+                    }
+                }
+
+                stage('Static') {
+                    agent { label 'agent1' }  // <-- CAMBIO
+                    steps {
+                        sh 'whoami'
+                        sh 'hostname'
+                        sh 'echo "Workspace: $WORKSPACE"'
+
+                        unstash 'code'
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            sh '''
+                                python3 -m venv venv
+                                . venv/bin/activate
+                                pip install --upgrade pip
+                                pip install flake8
+
+                                flake8 --exit-zero --format=pylint --output-file=flake8.log app/
+
+                                ERRORS=$(grep -c "^\\[" flake8.log || echo "0")
+                                echo "Flake8 found $ERRORS issues"
+
+                                if [ "$ERRORS" -ge 10 ]; then
+                                    echo "UNHEALTHY: 10+ issues"
+                                    exit 1
+                                elif [ "$ERRORS" -ge 8 ]; then
+                                    echo "UNSTABLE: 8-9 issues"
+                                    exit 1
+                                else
+                                    echo "HEALTHY: <8 issues"
+                                fi
+                            '''
+                        }
+                        recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.log')]
+                    }
+                }
+
+                stage('Security') {
+                    agent { label 'agent2' }  // <-- CAMBIO
+                    steps {
+                        sh 'whoami'
+                        sh 'hostname'
+                        sh 'echo "Workspace: $WORKSPACE"'
+
+                        unstash 'code'
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            sh '''
+                                python3 -m venv venv
+                                . venv/bin/activate
+                                pip install --upgrade pip
+                                pip install bandit
+
+                                bandit -r app/ -f json -o bandit-report.json --exit-zero || true
+                                bandit -r app/ -f txt -o bandit-report.txt --exit-zero || true
+
+                                ISSUES=$(python3 -c "import json; data=json.load(open('bandit-report.json')); print(len(data.get('results', [])))" 2>/dev/null || echo "0")
+                                echo "Bandit found $ISSUES security issues"
+
+                                if [ "$ISSUES" -ge 4 ]; then
+                                    echo "UNHEALTHY: 4+ issues"
+                                    exit 1
+                                elif [ "$ISSUES" -ge 2 ]; then
+                                    echo "UNSTABLE: 2-3 issues"
+                                    exit 1
+                                else
+                                    echo "HEALTHY: <2 issues"
+                                fi
+                            '''
+                        }
+                        archiveArtifacts artifacts: 'bandit-report.*', allowEmptyArchive: true
                     }
                 }
             }
         }
 
-        stage('Results') {
-            agent any
+        stage('Performance') {
+            agent { label 'agent-local' }  // <-- CAMBIO
             steps {
-                unstash 'unit-results'
-                unstash 'rest-results'
-                junit 'result*.xml'
+                sh 'whoami'
+                sh 'hostname'
+                sh 'echo "Workspace: $WORKSPACE"'
+
+                unstash 'code'
+                sh '''
+                    export PYTHONPATH=$PWD
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                    pip install -e .
+
+                    export FLASK_APP=app/api.py
+
+                    nohup flask run --port 5001 > flask.log 2>&1 &
+                    echo $! > flask.pid
+                    sleep 5
+
+                    curl -f http://localhost:5001/ || echo "Flask not responding"
+
+                    jmeter -n -t test/jmeter/flask.jmx -l jmeter-results.jtl -e -o jmeter-report || echo "JMeter completed"
+
+                    kill $(cat flask.pid) 2>/dev/null || true
+                '''
+                perfReport sourceDataFiles: 'jmeter-results.jtl'
+            }
+        }
+
+        stage('Coverage') {
+            agent { label 'agent-local' }  // <-- CAMBIO
+            steps {
+                sh 'whoami'
+                sh 'hostname'
+                sh 'echo "Workspace: $WORKSPACE"'
+
+                unstash 'code'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh '''
+                        export PYTHONPATH=$PWD
+                        python3 -m venv venv
+                        . venv/bin/activate
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                        pip install -e .
+
+                        pytest --cov=app --cov-report=xml --cov-report=html --cov-report=term test/unit
+
+                        COVERAGE_LINE=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(float(root.attrib['line-rate']) * 100)")
+                        COVERAGE_BRANCH=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(float(root.attrib['branch-rate']) * 100)")
+
+                        echo "Line coverage: ${COVERAGE_LINE}%"
+                        echo "Branch coverage: ${COVERAGE_BRANCH}%"
+
+                        LINE_OK=$(python3 -c "print(1 if ${COVERAGE_LINE} >= 85.0 else 0)")
+                        BRANCH_OK=$(python3 -c "print(1 if ${COVERAGE_BRANCH} >= 80.0 else 0)")
+
+                        if [ "$LINE_OK" -eq 0 ] || [ "$BRANCH_OK" -eq 0 ]; then
+                            echo "UNSTABLE: Coverage below minimum"
+                            exit 1
+                        fi
+                    '''
+                }
+                publishHTML([
+                    reportDir: 'htmlcov',
+                    reportFiles: 'index.html',
+                    reportName: 'Coverage Report'
+                ])
+                cobertura coberturaReportFile: 'coverage.xml'
             }
         }
     }
