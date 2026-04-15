@@ -1,0 +1,274 @@
+pipeline {
+    agent none  // <-- CAMBIO: agent none
+
+    options {
+        skipDefaultCheckout true
+    }
+
+    stages {
+        stage('Get Code') {
+            agent { label 'agent-local' }  // <-- CAMBIO
+            steps {
+                // Identificación del agente
+                sh 'whoami'
+                sh 'hostname'
+                sh 'echo "Workspace: $WORKSPACE"'
+
+                // Obtener código - Reto 3: rama con 100% coverage
+                git branch: 'feature_fix_coverage', url: 'https://github.com/gCuadros/helloworld-devops.git'
+
+                // Stash para compartir
+                stash includes: '**', name: 'code', allowEmpty: false
+            }
+        }
+
+        stage('Tests') {
+            parallel {
+                stage('Unit') {
+                    agent { label 'agent1' }  // <-- CAMBIO
+                    steps {
+                        sh 'whoami'
+                        sh 'hostname'
+                        sh 'echo "Workspace: $WORKSPACE"'
+
+                        unstash 'code'  // <-- CAMBIO: recuperar código
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            sh '''
+                                export PYTHONPATH=$PWD
+                                python3 -m venv venv
+                                . venv/bin/activate
+                                pip install --upgrade pip
+                                pip install -r requirements.txt
+                                pip install -e .
+                                
+                                # Ejecutar tests CON cobertura (una sola vez)
+                                pytest --cov=app --cov-branch --cov-report=xml --cov-report=html \
+                                       --junitxml=result-unit.xml test/unit
+                            '''
+                        }
+                        junit 'result-unit.xml'
+                        
+                        // Guardar archivos de cobertura
+                        stash includes: 'coverage.xml,htmlcov/**,.coverage', name: 'coverage-data'
+                    }
+                }
+
+                stage('Rest') {
+                    agent { label 'agent2' }  // <-- CAMBIO
+                    steps {
+                        sh 'whoami'
+                        sh 'hostname'
+                        sh 'echo "Workspace: $WORKSPACE"'
+
+                        unstash 'code'
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            sh '''
+                                export PYTHONPATH=$PWD
+                                python3 -m venv venv
+                                . venv/bin/activate
+                                pip install --upgrade pip
+                                pip install -r requirements.txt
+                                pip install -e .
+
+                                export FLASK_APP=app/api.py
+
+                                nohup flask run --port 5001 > flask.log 2>&1 &
+                                echo $! > flask.pid
+                                sleep 4
+
+                                if [ ! -f "wiremock-standalone.jar" ]; then
+                                    curl -o wiremock-standalone.jar https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.27.2/wiremock-standalone-2.27.2.jar
+                                fi
+                                nohup java -jar wiremock-standalone.jar --port 9090 --root-dir test/wiremock > wiremock.log 2>&1 &
+                                echo $! > wiremock.pid
+                                sleep 10
+
+                                pytest --junitxml=result-rest.xml test/rest
+
+                                kill $(cat flask.pid) 2>/dev/null || true
+                                kill $(cat wiremock.pid) 2>/dev/null || true
+                            '''
+                        }
+                        junit 'result-rest.xml'
+                    }
+                }
+
+                stage('Static') {
+                    agent { label 'agent1' }  // <-- CAMBIO
+                    steps {
+                        sh 'whoami'
+                        sh 'hostname'
+                        sh 'echo "Workspace: $WORKSPACE"'
+
+                        unstash 'code'
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            sh '''
+                                python3 -m venv venv
+                                . venv/bin/activate
+                                pip install --upgrade pip
+                                pip install flake8
+
+                                flake8 --exit-zero --format=pylint --output-file=flake8.log app/
+
+                                ERRORS=$(grep -c "^\\[" flake8.log || echo "0")
+                                echo "Flake8 found $ERRORS issues"
+
+                                if [ "$ERRORS" -ge 10 ]; then
+                                    echo "UNHEALTHY: 10+ issues"
+                                    exit 1
+                                elif [ "$ERRORS" -ge 8 ]; then
+                                    echo "UNSTABLE: 8-9 issues"
+                                    exit 1
+                                else
+                                    echo "HEALTHY: <8 issues"
+                                fi
+                            '''
+                        }
+                        recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.log')]
+                    }
+                }
+
+                stage('Security') {
+                    agent { label 'agent2' }  // <-- CAMBIO
+                    steps {
+                        sh 'whoami'
+                        sh 'hostname'
+                        sh 'echo "Workspace: $WORKSPACE"'
+
+                        unstash 'code'
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            sh '''
+                                python3 -m venv venv
+                                . venv/bin/activate
+                                pip install --upgrade pip
+                                pip install bandit
+
+                                bandit -r app/ -f json -o bandit-report.json --exit-zero || true
+                                bandit -r app/ -f txt -o bandit-report.txt --exit-zero || true
+
+                                ISSUES=$(python3 -c "import json; data=json.load(open('bandit-report.json')); print(len(data.get('results', [])))" 2>/dev/null || echo "0")
+                                echo "Bandit found $ISSUES security issues"
+
+                                if [ "$ISSUES" -ge 4 ]; then
+                                    echo "UNHEALTHY: 4+ issues"
+                                    exit 1
+                                elif [ "$ISSUES" -ge 2 ]; then
+                                    echo "UNSTABLE: 2-3 issues"
+                                    exit 1
+                                else
+                                    echo "HEALTHY: <2 issues"
+                                fi
+                            '''
+                        }
+                        recordIssues tools: [pmdParser(name: 'Bandit', pattern: 'bandit-report.json')]
+                        archiveArtifacts artifacts: 'bandit-report.*', allowEmptyArchive: true
+                    }
+                }
+            }
+        }
+
+        stage('Performance') {
+            agent { label 'agent-local' }  // <-- CAMBIO
+            steps {
+                sh 'whoami'
+                sh 'hostname'
+                sh 'echo "Workspace: $WORKSPACE"'
+
+                unstash 'code'
+                sh '''
+                    export PYTHONPATH=$PWD
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                    pip install -e .
+
+                    export FLASK_APP=app/api.py
+
+                    nohup flask run --port 5001 > flask.log 2>&1 &
+                    echo $! > flask.pid
+                    sleep 5
+
+                    curl -f http://localhost:5001/ || echo "Flask not responding"
+
+                    jmeter -n -t test/jmeter/flask.jmx -l jmeter-results.jtl -e -o jmeter-report || echo "JMeter completed"
+
+                    kill $(cat flask.pid) 2>/dev/null || true
+                '''
+                perfReport sourceDataFiles: 'jmeter-results.jtl'
+            }
+        }
+
+        stage('Coverage') {
+            agent { label 'agent-local' }  // <-- CAMBIO
+            steps {
+                sh 'whoami'
+                sh 'hostname'
+                sh 'echo "Workspace: $WORKSPACE"'
+
+                unstash 'code'
+                // Recuperar archivos de cobertura generados en stage Unit
+                unstash 'coverage-data'
+                
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh '''
+                        # Extraer cobertura del archivo ya generado
+                        COVERAGE_LINE=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(float(root.attrib['line-rate']) * 100)")
+                        COVERAGE_BRANCH=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(float(root.attrib['branch-rate']) * 100)")
+
+                        echo "Line coverage: ${COVERAGE_LINE}%"
+                        echo "Branch coverage: ${COVERAGE_BRANCH}%"
+
+                        # Aplicar baremo según enunciado
+                        # Líneas: <85% rojo, 85-95% unstable, >95% verde
+                        # Ramas: <80% rojo, 80-90% unstable, >90% verde
+                        
+                        LINE_FAIL=$(python3 -c "print(1 if ${COVERAGE_LINE} < 85.0 else 0)")
+                        BRANCH_FAIL=$(python3 -c "print(1 if ${COVERAGE_BRANCH} < 80.0 else 0)")
+                        LINE_UNSTABLE=$(python3 -c "print(1 if 85.0 <= ${COVERAGE_LINE} < 95.0 else 0)")
+                        BRANCH_UNSTABLE=$(python3 -c "print(1 if 80.0 <= ${COVERAGE_BRANCH} < 90.0 else 0)")
+
+                        if [ "$LINE_FAIL" -eq 1 ]; then
+                            echo "FAILURE: Line coverage ${COVERAGE_LINE}% below minimum 85%"
+                            exit 1
+                        elif [ "$BRANCH_FAIL" -eq 1 ]; then
+                            echo "FAILURE: Branch coverage ${COVERAGE_BRANCH}% below minimum 80%"
+                            exit 1
+                        elif [ "$LINE_UNSTABLE" -eq 1 ] || [ "$BRANCH_UNSTABLE" -eq 1 ]; then
+                            echo "UNSTABLE: Coverage in warning range (Line: ${COVERAGE_LINE}%, Branch: ${COVERAGE_BRANCH}%)"
+                            echo "  - Line coverage should be >95% (currently ${COVERAGE_LINE}%)"
+                            echo "  - Branch coverage should be >90% (currently ${COVERAGE_BRANCH}%)"
+                            exit 1
+                        else
+                            echo "SUCCESS: Coverage meets all thresholds (Line: ${COVERAGE_LINE}%, Branch: ${COVERAGE_BRANCH}%)"
+                        fi
+                    '''
+                }
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'htmlcov',
+                    reportFiles: 'index.html',
+                    reportName: 'Coverage Report'
+                ])
+                archiveArtifacts artifacts: 'coverage.xml', allowEmptyArchive: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '========================================='
+            echo 'Pipeline executed successfully!'
+            echo 'All tests passed on distributed agents!'
+            echo '========================================='
+        }
+        failure {
+            echo '========================================='
+            echo 'Pipeline failed!'
+            echo 'Check logs above for details'
+            echo '========================================='
+        }
+    }
+}

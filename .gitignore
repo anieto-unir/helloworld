@@ -1,3 +1,51 @@
 result.xml
 __pycache__
 .pytest_cache
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Testing
+.coverage
+coverage.xml
+htmlcov/
+reports/
+*.log
+*.pid
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Jenkins
+agent.jar
+remoting.jar
+slave.jar
+*.hpi
+*.jpi
+work/
+.jenkins/agents/
+
+# Wiremock (descargado por pipeline)
+wiremock-standalone*.jar
