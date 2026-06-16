@@ -1,0 +1,193 @@
+Lanzada por el usuario Giovanna leon
+[Pipeline] Start of Pipeline
+[Pipeline] stage
+[Pipeline] { (GetCode)
+[Pipeline] node
+Running on agent3 in /home/agent3/jenkins/workspace/PROYECTOS/test2
+[Pipeline] {
+[Pipeline] git
+The recommended git tool is: NONE
+No credentials specified
+Cloning the remote Git repository
+Cloning repository https://github.com/GiovannaLeon/helloworld.git
+ > git.exe init C:\home\agent3\jenkins\workspace\PROYECTOS\test2 # timeout=10
+Fetching upstream changes from https://github.com/GiovannaLeon/helloworld.git
+ > git.exe --version # timeout=10
+ > git --version # 'git version 2.47.1.windows.1'
+ > git.exe fetch --tags --force --progress -- https://github.com/GiovannaLeon/helloworld.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+Avoid second fetch
+Checking out Revision 2d4c6b21611c8e8aa467d47d9ce70faf50cefe99 (refs/remotes/origin/master)
+ > git.exe config remote.origin.url https://github.com/GiovannaLeon/helloworld.git # timeout=10
+ > git.exe config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git.exe rev-parse "refs/remotes/origin/master^{commit}" # timeout=10
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f 2d4c6b21611c8e8aa467d47d9ce70faf50cefe99 # timeout=10
+Commit message: "Add files via upload"
+ > git.exe branch -a -v --no-abbrev # timeout=10
+ > git.exe checkout -b master 2d4c6b21611c8e8aa467d47d9ce70faf50cefe99 # timeout=10
+ > git.exe rev-list --no-walk 2d4c6b21611c8e8aa467d47d9ce70faf50cefe99 # timeout=10
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Start WireMock)
+[Pipeline] node
+Running on agente3_1 in /home/agent3/jenkins/workspace/PROYECTOS/test2
+[Pipeline] {
+[Pipeline] script
+[Pipeline] {
+[Pipeline] echo
+Levantando WireMock...
+[Pipeline] bat
+
+C:\home\agent3\jenkins\workspace\PROYECTOS\test2>start java -jar "C:\Users\amaro\Documents\Giovanna\helloworld\test\wiremock-standalone-3.10.0.jar" --port 9090  
+[Pipeline] sleep
+Sleeping for 5 Seg
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build)
+[Pipeline] node
+Running on agent3 in /home/agent3/jenkins/workspace/PROYECTOS/test2
+[Pipeline] {
+[Pipeline] echo
+No hay que hacer nada. Esto es Python
+[Pipeline] bat
+
+C:\home\agent3\jenkins\workspace\PROYECTOS\test2>dir
+ El volumen de la unidad C es Windows
+ El n£mero de serie del volumen es: 6475-04AA
+
+ Directorio de C:\home\agent3\jenkins\workspace\PROYECTOS\test2
+
+13/12/2024  11:15    <DIR>          .
+13/12/2024  11:14    <DIR>          ..
+13/12/2024  11:15                40 .gitignore
+13/12/2024  11:15    <DIR>          app
+13/12/2024  11:15    <DIR>          jenkinsFile_1
+13/12/2024  11:15    <DIR>          jenkinsFile_2
+13/12/2024  11:15    <DIR>          JenkinsFile_3
+13/12/2024  11:15               175 pytest.ini
+13/12/2024  11:15               418 README.md
+13/12/2024  11:15    <DIR>          test
+               3 archivos            633 bytes
+               7 dirs  598.764.298.240 bytes libres
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Tests)
+[Pipeline] parallel
+[Pipeline] { (Branch: Unit)
+[Pipeline] { (Branch: Rest)
+[Pipeline] stage
+[Pipeline] { (Unit)
+[Pipeline] stage
+[Pipeline] { (Rest)
+[Pipeline] node
+Running on agente3_2 in /home/agent3/jenkins/workspace/PROYECTOS/test2
+[Pipeline] node
+Running on agente3_1 in /home/agent3/jenkins/workspace/PROYECTOS/test2
+[Pipeline] {
+[Pipeline] {
+[Pipeline] catchError
+[Pipeline] {
+[Pipeline] catchError
+[Pipeline] {
+[Pipeline] bat
+[Pipeline] bat
+
+C:\home\agent3\jenkins\workspace\PROYECTOS\test2>set PYTHONPATH=/home/agent3/jenkins/workspace/PROYECTOS/test2 
+
+C:\home\agent3\jenkins\workspace\PROYECTOS\test2>C:\Users\amaro\AppData\Local\Programs\Python\Python313\python.exe -m pytest --junitxml=result-unit.xml test\unit 
+
+C:\home\agent3\jenkins\workspace\PROYECTOS\test2>set FLASK_APP=app\api.py 
+
+C:\home\agent3\jenkins\workspace\PROYECTOS\test2>start /B C:\Users\amaro\AppData\Local\Programs\Python\Python313\python.exe -m flask run --host=0.0.0.0 --port=5000 
+
+C:\home\agent3\jenkins\workspace\PROYECTOS\test2>set PYTHONPATH=/home/agent3/jenkins/workspace/PROYECTOS/test2 
+
+C:\home\agent3\jenkins\workspace\PROYECTOS\test2>start C:\Users\amaro\AppData\Local\Programs\Python\Python313\python.exe -m pytest --junitxml=result-rest.xml /home/agent3/jenkins/workspace/PROYECTOS/test2\test\rest 
+
+C:\home\agent3\jenkins\workspace\PROYECTOS\test2>echo 'Flask...' 
+'Flask...'
+[Pipeline] }
+[Pipeline] // catchError
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+============================= test session starts =============================
+platform win32 -- Python 3.13.0, pytest-8.3.4, pluggy-1.5.0
+rootdir: C:\home\agent3\jenkins\workspace\PROYECTOS\test2
+configfile: pytest.ini
+collected 10 items
+
+test\unit\calc_test.py ........                                          [ 80%]
+test\unit\util_test.py ..                                                [100%]
+
+- generated xml file: C:\home\agent3\jenkins\workspace\PROYECTOS\test2\result-unit.xml -
+============================= 10 passed in 0.34s ==============================
+
+C:\home\agent3\jenkins\workspace\PROYECTOS\test2>echo 'python...' 
+'python...'
+[Pipeline] }
+[Pipeline] // catchError
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // parallel
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Stop WireMock)
+[Pipeline] node
+Running on agente3_1 in /home/agent3/jenkins/workspace/PROYECTOS/test2
+[Pipeline] {
+[Pipeline] script
+[Pipeline] {
+[Pipeline] echo
+Deteniendo WireMock...
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Results)
+[Pipeline] node
+Running on agent3 in /home/agent3/jenkins/workspace/PROYECTOS/test2
+[Pipeline] {
+[Pipeline] junit
+Grabando resultados de tests
+[Checks API] No suitable checks publisher found.
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Clean Workspace)
+[Pipeline] node
+Running on agent3 in /home/agent3/jenkins/workspace/PROYECTOS/test2
+[Pipeline] {
+[Pipeline] script
+[Pipeline] {
+[Pipeline] deleteDir
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] End of Pipeline
+Finished: SUCCESS

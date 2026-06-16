@@ -1,0 +1,139 @@
+Lanzada por el usuario Giovanna leon
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins  in C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (GetCode)
+[Pipeline] git
+The recommended git tool is: NONE
+No credentials specified
+Cloning the remote Git repository
+Cloning repository https://github.com/GiovannaLeon/helloworld.git
+ > git.exe init C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2 # timeout=10
+Fetching upstream changes from https://github.com/GiovannaLeon/helloworld.git
+ > git.exe --version # timeout=10
+ > git --version # 'git version 2.47.1.windows.1'
+ > git.exe fetch --tags --force --progress -- https://github.com/GiovannaLeon/helloworld.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git.exe config remote.origin.url https://github.com/GiovannaLeon/helloworld.git # timeout=10
+ > git.exe config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+Avoid second fetch
+ > git.exe rev-parse "refs/remotes/origin/master^{commit}" # timeout=10
+Checking out Revision e0ba056e2a643630158875df7bc3e029dd7b1ce3 (refs/remotes/origin/master)
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f e0ba056e2a643630158875df7bc3e029dd7b1ce3 # timeout=10
+ > git.exe branch -a -v --no-abbrev # timeout=10
+ > git.exe checkout -b master e0ba056e2a643630158875df7bc3e029dd7b1ce3 # timeout=10
+Commit message: "Add files via upload"
+ > git.exe rev-list --no-walk e0ba056e2a643630158875df7bc3e029dd7b1ce3 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build)
+[Pipeline] echo
+NO HAY QUE COMPILAR NADA, ESTO ES PYTHON
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2>dir
+ El volumen de la unidad C es Windows
+ El n£mero de serie del volumen es: 6475-04AA
+
+ Directorio de C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2
+
+14/12/2024  19:19    <DIR>          .
+14/12/2024  19:14    <DIR>          ..
+14/12/2024  19:19                40 .gitignore
+14/12/2024  19:19    <DIR>          app
+14/12/2024  19:19    <DIR>          jenkinsFile_1
+14/12/2024  19:19    <DIR>          jenkinsFile_11_polling
+14/12/2024  19:19    <DIR>          jenkinsFile_2
+14/12/2024  19:19    <DIR>          JenkinsFile_3
+14/12/2024  19:19    <DIR>          jenkinsfile_4
+14/12/2024  19:19               175 pytest.ini
+14/12/2024  19:19               418 README.md
+14/12/2024  19:19    <DIR>          test
+               3 archivos            633 bytes
+               9 dirs  596.115.689.472 bytes libres
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Tests)
+[Pipeline] parallel
+[Pipeline] { (Branch: Unit)
+[Pipeline] { (Branch: Rest)
+[Pipeline] stage
+[Pipeline] { (Unit)
+[Pipeline] stage
+[Pipeline] { (Rest)
+[Pipeline] catchError
+[Pipeline] {
+[Pipeline] catchError
+[Pipeline] {
+[Pipeline] bat
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2>SET PYTHONPATH=C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2>C:\Users\amaro\AppData\Local\Programs\Python\Python313\python.exe -m pytest --junitxml=result-unit.xml test\unit 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2>SET FLASK_APP=app\api.py 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2>start /B C:\Users\amaro\AppData\Local\Programs\Python\Python313\python.exe -m flask run --host=0.0.0.0 --port=5000 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2>start java -jar "C:\Users\amaro\Documents\Giovanna\wiremock\wiremock-standalone-3.10.0.jar" --port 9090 --root-dir "C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1\test\wiremock" 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2>SET PYTHONPATH=C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2>C:\Users\amaro\AppData\Local\Programs\Python\Python313\python.exe -m pytest --junitxml=result-rest.xml test\rest 
+============================= test session starts =============================
+platform win32 -- Python 3.13.0, pytest-8.3.4, pluggy-1.5.0
+rootdir: C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2
+configfile: pytest.ini
+collected 10 items
+
+test\unit\calc_test.py ........                                          [ 80%]
+test\unit\util_test.py ..                                                [100%] * Serving Flask app 'app\api.py'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.48:5000
+Press CTRL+C to quit
+============================= test session starts =============================
+platform win32 -- Python 3.13.0, pytest-8.3.4, pluggy-1.5.0
+rootdir: C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2
+configfile: pytest.ini
+collected 2 items
+
+test\rest\api_test.py 
+
+- generated xml file: C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2\result-unit.xml -
+============================= 10 passed in 0.38s ==============================
+[Pipeline] }
+[Pipeline] // catchError
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+..                                                 [100%]
+
+- generated xml file: C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1@2\result-rest.xml -
+============================== 2 passed in 2.40s ==============================
+[Pipeline] }
+[Pipeline] // catchError
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // parallel
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Results)
+[Pipeline] junit
+Grabando resultados de tests
+[Checks API] No suitable checks publisher found.
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS

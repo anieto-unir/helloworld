@@ -1,0 +1,69 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('GetCode') {
+            agent { label 'agent_master' }
+            steps {
+                git branch: 'develop', url: 'https://github.com/GiovannaLeon/helloworld.git'
+            }
+        }
+        
+        stage('Build') {
+            agent { label 'agent_secundario' }
+            steps {
+                echo 'NO HAY QUE COMPILAR NADA, ESTO ES PYTHON'
+                bat "dir"
+            }
+        }
+        
+        stage('Tests') {
+            parallel {
+                stage('Unit') {
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE'){
+                            bat '''
+                                SET PYTHONPATH=%WORKSPACE%
+            					C:\\Users\\amaro\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m pytest --junitxml=result-unit.xml test\\unit
+            
+                            '''
+                            sleep(5)
+                        }
+                    }
+                }
+        
+                stage('Rest') {
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE'){
+                            bat '''
+                                SET FLASK_APP=app\\api.py
+                                start /B C:\\Users\\amaro\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m flask run --host=0.0.0.0 --port=5000
+                                start java -jar "C:\\Users\\amaro\\Documents\\Giovanna\\wiremock\\wiremock-standalone-3.10.0.jar" --port 9090 --root-dir "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Unir\\test-1\\test\\wiremock"
+                                SET PYTHONPATH=%WORKSPACE%
+            					C:\\Users\\amaro\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m pytest --junitxml=result-rest.xml test\\rest
+                            '''
+                            sleep(5)
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Stop WireMock') {
+            steps {
+                script {
+                    echo 'Deteniendo WireMock...'
+                    //bat '''
+                    //taskkill /F /IM java.exe
+                    //'''
+                }
+            }
+        }
+        
+        stage('Results') {
+            steps {
+                junit 'result*.xml'
+            }
+        }   
+    }
+}

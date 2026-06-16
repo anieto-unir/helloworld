@@ -1,0 +1,141 @@
+Lanzada por el usuario Giovanna leon
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins  in C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (GetCode)
+[Pipeline] node
+Running on agent_master in C:\ProgramData\Jenkins\.jenkins\workspace\agents\agent_master\workspace\Unir\test-3
+[Pipeline] {
+[Pipeline] git
+The recommended git tool is: NONE
+No credentials specified
+Fetching changes from the remote Git repository
+ > git.exe rev-parse --resolve-git-dir C:\ProgramData\Jenkins\.jenkins\workspace\agents\agent_master\workspace\Unir\test-3\.git # timeout=10
+ > git.exe config remote.origin.url https://github.com/GiovannaLeon/helloworld.git # timeout=10
+Fetching upstream changes from https://github.com/GiovannaLeon/helloworld.git
+ > git.exe --version # timeout=10
+ > git --version # 'git version 2.47.1.windows.1'
+ > git.exe fetch --tags --force --progress -- https://github.com/GiovannaLeon/helloworld.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+Checking out Revision e6f80f4d88c36887db44a6bc7a2cea0cc0923af3 (refs/remotes/origin/develop)
+ > git.exe rev-parse "refs/remotes/origin/develop^{commit}" # timeout=10
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f e6f80f4d88c36887db44a6bc7a2cea0cc0923af3 # timeout=10
+Commit message: "añado test para multiplicar y dividir"
+ > git.exe branch -a -v --no-abbrev # timeout=10
+ > git.exe branch -D develop # timeout=10
+ > git.exe checkout -b develop e6f80f4d88c36887db44a6bc7a2cea0cc0923af3 # timeout=10
+ > git.exe rev-list --no-walk e6f80f4d88c36887db44a6bc7a2cea0cc0923af3 # timeout=10
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build)
+[Pipeline] node
+Running on agent_secundario in C:\ProgramData\Jenkins\.jenkins\workspace\agents\agent_secundario\workspace\Unir\test-3
+[Pipeline] {
+[Pipeline] echo
+NO HAY QUE COMPILAR NADA, ESTO ES PYTHON
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\agents\agent_secundario\workspace\Unir\test-3>dir
+ El volumen de la unidad C es Windows
+ El n£mero de serie del volumen es: 6475-04AA
+
+ Directorio de C:\ProgramData\Jenkins\.jenkins\workspace\agents\agent_secundario\workspace\Unir\test-3
+
+13/12/2024  23:46    <DIR>          .
+13/12/2024  23:55    <DIR>          ..
+               0 archivos              0 bytes
+               2 dirs  596.348.452.864 bytes libres
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Tests)
+[Pipeline] parallel
+[Pipeline] { (Branch: Unit)
+[Pipeline] { (Branch: Rest)
+[Pipeline] stage
+[Pipeline] { (Unit)
+[Pipeline] stage
+[Pipeline] { (Rest)
+[Pipeline] catchError
+[Pipeline] {
+[Pipeline] catchError
+[Pipeline] {
+[Pipeline] bat
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3>SET PYTHONPATH=C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3>C:\Users\amaro\AppData\Local\Programs\Python\Python313\python.exe -m pytest --junitxml=result-unit.xml test\unit 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3>SET FLASK_APP=app\api.py 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3>start /B C:\Users\amaro\AppData\Local\Programs\Python\Python313\python.exe -m flask run --host=0.0.0.0 --port=5000 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3>start java -jar "C:\Users\amaro\Documents\Giovanna\wiremock\wiremock-standalone-3.10.0.jar" --port 9090 --root-dir "C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-1\test\wiremock" 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3>SET PYTHONPATH=C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3>C:\Users\amaro\AppData\Local\Programs\Python\Python313\python.exe -m pytest --junitxml=result-rest.xml test\rest 
+ * Serving Flask app 'app\api.py'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.48:5000
+Press CTRL+C to quit
+============================= test session starts =============================
+platform win32 -- Python 3.13.0, pytest-8.3.4, pluggy-1.5.0
+rootdir: C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3
+configfile: pytest.ini
+collected 5 items
+
+test\rest\api_test.py ============================= test session starts =============================
+platform win32 -- Python 3.13.0, pytest-8.3.4, pluggy-1.5.0
+rootdir: C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3
+configfile: pytest.ini
+collected 10 items
+
+test\unit\calc_test.py ........                                          [ 80%]
+test\unit\util_test.py ..                                                [100%]
+
+- generated xml file: C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3\result-unit.xml -
+============================= 10 passed in 0.12s ==============================
+[Pipeline] }
+[Pipeline] // catchError
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+127.0.0.1 - - [13/Dec/2024 23:58:45] "GET /calc/add/1/2 HTTP/1.1" 200 -
+.127.0.0.1 - - [13/Dec/2024 23:58:47] "GET /calc/divide/8/2 HTTP/1.1" 200 -
+.127.0.0.1 - - [13/Dec/2024 23:58:49] "GET /calc/multiply/5/3 HTTP/1.1" 200 -
+..127.0.0.1 - - [13/Dec/2024 23:58:51] "GET /calc/substract/4/2 HTTP/1.1" 200 -
+.                                              [100%]
+
+- generated xml file: C:\ProgramData\Jenkins\.jenkins\workspace\Unir\test-3\result-rest.xml -
+============================== 5 passed in 8.54s ==============================
+[Pipeline] }
+[Pipeline] // catchError
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // parallel
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Results)
+[Pipeline] junit
+Grabando resultados de tests
+[Checks API] No suitable checks publisher found.
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS

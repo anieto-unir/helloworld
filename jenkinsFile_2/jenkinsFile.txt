@@ -1,0 +1,97 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('GetCode') {
+            agent { label 'agent_master' }
+            steps {
+                //echo "Running on $(hostname)"
+                //echo "User: $(whoami)"
+                //echo "Workspace: ${WORKSPACE}"
+                git 'https://github.com/GiovannaLeon/helloworld.git'
+               // stash name: 'source', useDefaultExcludes: false  // 
+               // stash name: 'config', includes: 'config/**', useDefaultExcludes: false  // Almacenamos los archivos del directorio 'config'
+
+            }
+        }
+        
+        stage('Build') {
+          agent { label 'agent_secundario' }
+            steps {
+                
+                //unstash 'source'  // Recuperamos el código almacenado
+                //unstash 'config'  // Recuperamos los archivos de configuración almacenados
+                            
+                //echo "Running on $(hostname)"
+                //echo "User: $(whoami)"
+                //echo "Workspace: ${WORKSPACE}"
+                echo 'NO HAY QUE COMPILAR NADA, ESTO ES PYTHON'
+                bat "dir"
+            }
+        }
+        
+
+        stage('Tests') {
+            parallel {
+                stage('Unit') {
+                    //agent { label 'agente-secundario-2' }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE'){
+                            //unstash 'source'  // Recuperamos el código almacenado
+                            //unstash 'config'  // Recuperamos los archivos de configuración almacenados
+        
+                           // echo "Running on $(hostname)"
+                            //echo "User: $(whoami)"
+                            //echo "Workspace: ${WORKSPACE}"
+                            bat '''
+                                SET PYTHONPATH=%WORKSPACE%
+            					C:\\Users\\amaro\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m pytest --junitxml=result-unit.xml test\\unit
+                            '''                    
+                        }
+                    }
+                }
+        
+                stage('Rest') {
+                   // agent { label 'agente-secundario-1' }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE'){
+                            //unstash 'source'  // Recuperamos el código almacenado
+                            //unstash 'config'  // Recuperamos los archivos de configuración almacenados
+        
+                            //echo "Running on $(hostname)"
+                            //echo "User: $(whoami)"
+                            //echo "Workspace: ${WORKSPACE}"
+                            bat '''
+                                SET FLASK_APP=app\\api.py
+                                start /B C:\\Users\\amaro\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m flask run --host=0.0.0.0 --port=5000
+                                start java -jar "C:\\Users\\amaro\\Documents\\Giovanna\\wiremock\\wiremock-standalone-3.10.0.jar" --port 9090 --root-dir "C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Unir\\test-1\\test\\wiremock"
+                                SET PYTHONPATH=%WORKSPACE%
+            					C:\\Users\\amaro\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m pytest --junitxml=result-rest.xml test\\rest
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Results') {
+            steps {
+                junit 'result*.xml'
+            }
+        } 
+        
+        stage('Clean Workspace') {
+            agent { label 'agent_master' }  // Usamos el agente principal para recoger los resultados
+            steps {
+                //unstash 'source'  // Recuperamos el código almacenado
+                //unstash 'config'  // Recuperamos los archivos de configuración almacenados
+                //echo "Running on $(hostname)"
+                //echo "User: $(whoami)"
+                //echo "Workspace: ${WORKSPACE}"
+                script {
+                    deleteDir() // Elimina todo el contenido del workspace
+                }
+            }
+        }   
+    }
+}
